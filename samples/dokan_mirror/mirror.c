@@ -1567,6 +1567,7 @@ int __cdecl wmain(ULONG argc, PWCHAR argv[]) {
 
   g_DebugMode = FALSE;
   g_UseStdErr = FALSE;
+  g_CaseSensitive = FALSE;
 
   ZeroMemory(dokanOptions, sizeof(DOKAN_OPTIONS));
   dokanOptions->Version = DOKAN_VERSION;
