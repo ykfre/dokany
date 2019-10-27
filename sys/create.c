@@ -598,8 +598,6 @@ Return Value:
     DDbgPrint("  IrpSp->Flags = %d\n", irpSp->Flags);
     if (irpSp->Flags & SL_CASE_SENSITIVE) {
       DDbgPrint("  IrpSp->Flags SL_CASE_SENSITIVE\n");
-      // Dokan is case sensitive or insensitive
-      // NTFS can have case sensitive directories when the device is tag as case insensitive
     }
     if (irpSp->Flags & SL_FORCE_ACCESS_CHECK) {
       DDbgPrint("  IrpSp->Flags SL_FORCE_ACCESS_CHECK\n");

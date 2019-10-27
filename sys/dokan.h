@@ -314,7 +314,9 @@ typedef struct _DokanDiskControlBlock {
 
   // Whether any oplock functionality should be disabled.
   BOOLEAN OplocksDisabled;
-
+  
+  // Dokan is case sensitive or insensitive
+  // NTFS can have case sensitive directories even when the device is tag as case insensitive
   BOOLEAN CaseSensitive;
 } DokanDCB, *PDokanDCB;
 
