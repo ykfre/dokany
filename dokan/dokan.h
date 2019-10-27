@@ -113,6 +113,13 @@ extern "C" {
  * done inside of CreateFile calls on Windows 7.
  */
 #define DOKAN_OPTION_OPTIMIZE_SINGLE_NAME_SEARCH 2048
+/**
+ * Enable Case sensitive path
+ * By default all path are case insensitive
+ * Case Sensitive: \dir\File not equal to \diR\file
+ * where for case insensitive it is the same
+ */
+#define DOKAN_OPTION_CASE_SENSITIVE 4096
 
 /** @} */
 

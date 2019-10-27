@@ -748,6 +748,9 @@ BOOL DokanStart(PDOKAN_INSTANCE Instance) {
       DOKAN_OPTION_OPTIMIZE_SINGLE_NAME_SEARCH) {
     eventStart.Flags |= DOKAN_EVENT_OPTIMIZE_SINGLE_NAME_SEARCH;
   }
+  if (Instance->DokanOptions->Options & DOKAN_OPTION_CASE_SENSITIVE) {
+    eventStart.Flags |= DOKAN_EVENT_CASE_SENSITIVE;
+  }
 
   memcpy_s(eventStart.MountPoint, sizeof(eventStart.MountPoint),
            Instance->MountPoint, sizeof(Instance->MountPoint));

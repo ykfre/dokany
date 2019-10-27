@@ -314,6 +314,8 @@ typedef struct _DokanDiskControlBlock {
 
   // Whether any oplock functionality should be disabled.
   BOOLEAN OplocksDisabled;
+
+  BOOLEAN CaseSensitive;
 } DokanDCB, *PDokanDCB;
 
 #define IS_DEVICE_READ_ONLY(DeviceObject)                                      \

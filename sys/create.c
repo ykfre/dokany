@@ -97,7 +97,7 @@ PDokanFCB DokanAllocateFCB(__in PDokanVCB Vcb, __in PWCHAR FileName,
 }
 
 PDokanFCB DokanGetFCB(__in PDokanVCB Vcb, __in PWCHAR FileName,
-                      __in ULONG FileNameLength, BOOLEAN CaseSensitive) {
+                      __in ULONG FileNameLength, BOOLEAN CaseInSensitive) {
   PLIST_ENTRY thisEntry, nextEntry, listHead;
   PDokanFCB fcb = NULL;
 
@@ -120,10 +120,10 @@ PDokanFCB DokanGetFCB(__in PDokanVCB Vcb, __in PWCHAR FileName,
 
     fcb = CONTAINING_RECORD(thisEntry, DokanFCB, NextFCB);
     DDbgPrint("  DokanGetFCB has entry FileName: %wZ FileCount: %lu. Looking "
-              "for %ls\n",
-              &fcb->FileName, fcb->FileCount, FileName);
+              "for %ls CaseInSensitive %d\n",
+              &fcb->FileName, fcb->FileCount, FileName, CaseInSensitive);
     if (fcb->FileName.Length == FileNameLength // FileNameLength in bytes
-        && RtlEqualUnicodeString(&fn, &fcb->FileName, !CaseSensitive)) {
+        && RtlEqualUnicodeString(&fn, &fcb->FileName, CaseInSensitive)) {
       // we have the FCB which is already allocated and used
       DDbgPrint("  Found existing FCB for %ls\n", FileName);
       break;
@@ -510,6 +510,7 @@ Return Value:
   BOOLEAN EventContextConsumed = FALSE;
   DWORD disposition = 0;
   BOOLEAN fcbLocked = FALSE;
+  BOOLEAN caseInSensitive = TRUE;
   DOKAN_INIT_LOGGER(logger, DeviceObject->DriverObject, IRP_MJ_CREATE);
 
   PAGED_CODE();
@@ -597,6 +598,8 @@ Return Value:
     DDbgPrint("  IrpSp->Flags = %d\n", irpSp->Flags);
     if (irpSp->Flags & SL_CASE_SENSITIVE) {
       DDbgPrint("  IrpSp->Flags SL_CASE_SENSITIVE\n");
+      // Dokan is case sensitive or insensitive
+      // NTFS can have case sensitive directories when the device is tag as case insensitive
     }
     if (irpSp->Flags & SL_FORCE_ACCESS_CHECK) {
       DDbgPrint("  IrpSp->Flags SL_FORCE_ACCESS_CHECK\n");
@@ -713,6 +716,8 @@ Return Value:
       __leave;
     }
 
+    caseInSensitive = !dcb->CaseSensitive;
+
     // this memory is freed by DokanGetFCB if needed
     // "+ sizeof(WCHAR)" is for the last NULL character
     fileName = ExAllocatePool(fileNameLength + sizeof(WCHAR));
@@ -780,11 +785,9 @@ Return Value:
           fileName = NULL;
           __leave;
         }
-        fcb = DokanGetFCB(vcb, parentDir, parentDirLength,
-                          FlagOn(irpSp->Flags, SL_CASE_SENSITIVE));
+        fcb = DokanGetFCB(vcb, parentDir, parentDirLength, caseInSensitive);
       } else {
-        fcb = DokanGetFCB(vcb, fileName, fileNameLength,
-                          FlagOn(irpSp->Flags, SL_CASE_SENSITIVE));
+        fcb = DokanGetFCB(vcb, fileName, fileNameLength, caseInSensitive);
       }
       if (fcb == NULL) {
         status = STATUS_INSUFFICIENT_RESOURCES;

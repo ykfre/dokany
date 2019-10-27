@@ -558,6 +558,7 @@ DokanEventStart(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
   BOOLEAN fileLockUserMode = FALSE;
   BOOLEAN oplocksDisabled = FALSE;
   BOOLEAN optimizeSingleNameSearch = FALSE;
+  BOOLEAN caseSensitive = FALSE;
   ULONG sessionId = (ULONG)-1;
   DOKAN_INIT_LOGGER(logger, DeviceObject->DriverObject, 0);
 
@@ -651,6 +652,11 @@ DokanEventStart(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
     optimizeSingleNameSearch = TRUE;
   }
 
+  if (eventStart->Flags & DOKAN_EVENT_CASE_SENSITIVE) {
+    DDbgPrint("  Case sensitive enabled\n");
+    caseSensitive = TRUE;
+  }
+
   KeEnterCriticalRegion();
   ExAcquireResourceExclusiveLite(&dokanGlobal->Resource, TRUE);
 
@@ -719,6 +725,7 @@ DokanEventStart(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
   dcb->OplocksDisabled = oplocksDisabled;
   dcb->FileLockInUserMode = fileLockUserMode;
   dcb->OptimizeSingleNameSearch = optimizeSingleNameSearch;
+  dcb->CaseSensitive = caseSensitive;
   driverInfo->DeviceNumber = dokanGlobal->MountId;
   driverInfo->MountId = dokanGlobal->MountId;
   driverInfo->Status = DOKAN_MOUNTED;
