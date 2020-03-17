@@ -469,7 +469,7 @@ DiskDeviceControl(__in PDEVICE_OBJECT DeviceObject, __in PIRP Irp) {
     ASSERT(linkName != NULL);
 
     if (dcb->MountPoint != NULL && dcb->MountPoint->Length > 0) {
-      if (IsMountPointDriveLetter(dcb->MountPoint) == STATUS_SUCCESS) {
+      if (IsMountPointDriveLetter(dcb->MountPoint)) {
         linkName->UseOnlyIfThereAreNoOtherLinks = FALSE;
         linkName->NameLength = dcb->MountPoint->Length;
         if (sizeof(USHORT) + linkName->NameLength <= outputLength) {

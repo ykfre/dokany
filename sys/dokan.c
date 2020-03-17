@@ -33,6 +33,7 @@ static VOID InitMultiVersionResources();
 #endif
 
 ULONG g_Debug = DOKAN_DEBUG_NONE;
+RTL_OSVERSIONINFOW g_OSVersionInformation;
 LOOKASIDE_LIST_EX g_DokanCCBLookasideList;
 LOOKASIDE_LIST_EX g_DokanFCBLookasideList;
 LOOKASIDE_LIST_EX g_DokanEResourceLookasideList;
@@ -197,7 +198,13 @@ VOID CleanupGlobalDiskDevice(PDOKAN_GLOBAL dokanGlobal) {
 }
 
 VOID InitMultiVersionResources() {
+  // Enable No-Execute Nonpaged Pool - POOL_NX_OPTIN
   ExInitializeDriverRuntime(DrvRtPoolNxOptIn);
+
+  // Get detailed current running Windows Version information
+  // Used by DokanBuildRequest to fix fileName for repase point mount
+  RtlZeroMemory(&g_OSVersionInformation, sizeof(RTL_OSVERSIONINFOW));
+  RtlGetVersion(&g_OSVersionInformation);
 
   if (RtlIsNtDdiVersionAvailable(NTDDI_WIN8)) {
 

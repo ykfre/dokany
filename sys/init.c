@@ -56,16 +56,15 @@ static VOID FreeDcbNames(__in PDokanDCB Dcb) {
   }
 }
 
-NTSTATUS IsMountPointDriveLetter(__in PUNICODE_STRING mountPoint) {
+BOOLEAN IsMountPointDriveLetter(__in PUNICODE_STRING mountPoint) {
   if (mountPoint != NULL) {
     // Check if mount point match \DosDevices\C:
     USHORT length = mountPoint->Length / sizeof(WCHAR);
     if (length > 12 && length <= 15) {
-      return STATUS_SUCCESS;
+      return TRUE;
     }
   }
-
-  return STATUS_INVALID_PARAMETER;
+  return FALSE;
 }
 
 NTSTATUS

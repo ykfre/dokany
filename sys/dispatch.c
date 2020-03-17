@@ -43,16 +43,35 @@ struct SYMLINK_ECP_CONTEXT {
  * We get real name from the IRP_MJ_CREATE extra information in ECPs
  * This behavior is fixed in >= win10 1803
  */
-void RevertFileName(PIRP Irp) {
-  RTL_OSVERSIONINFOW VersionInformation = {0};
-  VersionInformation.dwOSVersionInfoSize = sizeof(RTL_OSVERSIONINFOW);
-  RtlGetVersion(&VersionInformation);
-  if (VersionInformation.dwMajorVersion > 10 ||
-      (VersionInformation.dwMajorVersion == 10 &&
-       VersionInformation.dwMinorVersion > 0) ||
-      (VersionInformation.dwMajorVersion == 10 &&
-       VersionInformation.dwMinorVersion == 0 &&
-       VersionInformation.dwBuildNumber >= 17134))
+void RevertFileName(__in PDEVICE_OBJECT DeviceObject, __in PIRP Irp) {
+  PDokanVCB vcb;
+  PDokanDCB dcb;
+
+  if (DeviceObject == NULL)
+    return;
+  dcb = DeviceObject->DeviceExtension;
+  if (dcb == NULL)
+    return;
+
+  if (GetIdentifierType(dcb) == DCB) {
+    vcb = dcb->Vcb;
+  } else {
+    vcb = DeviceObject->DeviceExtension;
+  }
+
+  // Only Revert when reparse point is used
+  if (vcb == NULL || GetIdentifierType(vcb) != VCB
+      || IsMountPointDriveLetter(vcb->Dcb->MountPoint)) {
+    return;
+  }
+
+  // No revert if we are running on >= win10 1803
+  if (g_OSVersionInformation.dwMajorVersion > 10 ||
+      (g_OSVersionInformation.dwMajorVersion == 10 &&
+       g_OSVersionInformation.dwMinorVersion > 0) ||
+      (g_OSVersionInformation.dwMajorVersion == 10 &&
+       g_OSVersionInformation.dwMinorVersion == 0 &&
+       g_OSVersionInformation.dwBuildNumber >= 17134))
     return;
 
   PECP_LIST EcpList;
@@ -108,8 +127,6 @@ DokanBuildRequest(__in PDEVICE_OBJECT DeviceObject, __in PIRP Irp) {
   BOOLEAN IsTopLevelIrp = FALSE;
   NTSTATUS Status = STATUS_UNSUCCESSFUL;
 
-  RevertFileName(Irp);
-
   __try {
 
     __try {
@@ -124,6 +141,8 @@ DokanBuildRequest(__in PDEVICE_OBJECT DeviceObject, __in PIRP Irp) {
         IsTopLevelIrp = TRUE;
         IoSetTopLevelIrp(Irp);
       }
+
+      RevertFileName(DeviceObject, Irp);
 
       Status = DokanDispatchRequest(DeviceObject, Irp);
 
