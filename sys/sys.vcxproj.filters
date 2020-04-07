@@ -102,6 +102,12 @@
     <ClInclude Include="irp_buffer_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="public_version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="dokan.rc">

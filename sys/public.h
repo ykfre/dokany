@@ -28,7 +28,7 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <minwindef.h>
 #endif
 
-#define DOKAN_DRIVER_VERSION 0x0000190
+#include "public_version.h"
 
 #define EVENT_CONTEXT_MAX_SIZE (1024 * 32)
 
@@ -389,15 +389,6 @@ typedef struct _EVENT_DRIVER_INFO {
   ULONG MountId;
   WCHAR DeviceName[64];
 } EVENT_DRIVER_INFO, *PEVENT_DRIVER_INFO;
-
-typedef struct _EVENT_START {
-  ULONG UserVersion;
-  ULONG DeviceType;
-  ULONG Flags;
-  WCHAR MountPoint[260];
-  WCHAR UNCName[64];
-  ULONG IrpTimeout;
-} EVENT_START, *PEVENT_START;
 
 #ifdef _MSC_VER
 #pragma warning(push)

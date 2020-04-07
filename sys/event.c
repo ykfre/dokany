@@ -22,6 +22,7 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dokan.h"
 #include "irp_buffer_helper.h"
+#include "version.h"
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text(PAGE, DokanOplockComplete)
@@ -371,10 +372,7 @@ DokanCompleteIrp(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
   PLIST_ENTRY thisEntry, nextEntry, listHead;
   PIRP_ENTRY irpEntry;
   PDokanVCB vcb;
-  PEVENT_INFORMATION eventInfo;
-
-  eventInfo = (PEVENT_INFORMATION)Irp->AssociatedIrp.SystemBuffer;
-  ASSERT(eventInfo != NULL);
+  PEVENT_INFORMATION eventInfo = NULL;
 
   // DDbgPrint("==> DokanCompleteIrp [EventInfo #%X]\n",
   // eventInfo->SerialNumber);
@@ -387,6 +385,16 @@ DokanCompleteIrp(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
   if (IsUnmountPendingVcb(vcb)) {
     DDbgPrint("      Volume is not mounted\n");
     return STATUS_NO_SUCH_DEVICE;
+  }
+
+  if (vcb->Dcb->UserVersion == DOKAN_DRIVER_VERSION_1) {
+    eventInfo = (PEVENT_INFORMATION)Irp->AssociatedIrp.SystemBuffer;
+    ASSERT(eventInfo != NULL);
+  } else {
+    // TODO(adrienj)
+    // EVENT_INFORMATION.BufferLength is checked later
+    // by the corresponding DokanComplete
+    GET_IRP_BUFFER_OR_RETURN(Irp, eventInfo);
   }
 
   // DDbgPrint("      Lock IrpList.ListLock\n");
@@ -570,15 +578,13 @@ DokanEventStart(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
     return STATUS_INVALID_PARAMETER;
   }
 
-  // We just use eventStart variable for his type size calculation here
-  GET_IRP_BUFFER(Irp, eventStart)
   irpSp = IoGetCurrentIrpStackLocation(Irp);
 
   outBufferLen = irpSp->Parameters.DeviceIoControl.OutputBufferLength;
-  if (outBufferLen != sizeof(EVENT_DRIVER_INFO) || !eventStart) {
+  if (outBufferLen != sizeof(EVENT_DRIVER_INFO)) {
     return DokanLogError(
         &logger, STATUS_INSUFFICIENT_RESOURCES,
-        L"Buffer IN/OUT received do not match the expected size.");
+        L"Buffer OUT received do not match the expected size.");
   }
 
   eventStart = DokanAlloc(sizeof(EVENT_START));
@@ -594,11 +600,14 @@ DokanEventStart(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
                          L"Failed to allocate buffers in event start.");
   }
 
-  RtlCopyMemory(eventStart, Irp->AssociatedIrp.SystemBuffer,
-                sizeof(EVENT_START));
-  if (eventStart->UserVersion != DOKAN_DRIVER_VERSION) {
-    DokanLogInfo(&logger, L"Driver version check in event start failed.");
-    startFailure = TRUE;
+  status = GetEventStart(DeviceObject, Irp, eventStart);
+  if (!NT_SUCCESS(status)) {
+    if (status == STATUS_INVALID_PARAMETER) {
+      startFailure = TRUE;
+    } else {
+      // Irrecoverable failure (i.e. EVENT_START too small)
+      return status;
+    }
   }
 
   if (DokanStringChar(eventStart->MountPoint,
@@ -738,6 +747,7 @@ DokanEventStart(__in PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp) {
   dcb->OplocksDisabled = oplocksDisabled;
   dcb->FileLockInUserMode = fileLockUserMode;
   dcb->OptimizeSingleNameSearch = optimizeSingleNameSearch;
+  dcb->UserVersion = eventStart->UserVersion;
   driverInfo->DeviceNumber = dokanGlobal->MountId;
   driverInfo->MountId = dokanGlobal->MountId;
   driverInfo->Status = DOKAN_MOUNTED;

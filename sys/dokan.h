@@ -285,6 +285,9 @@ typedef struct _DokanDiskControlBlock {
   USHORT MountGlobally;
   USHORT FileLockInUserMode;
 
+  // Userland library Information
+  ULONG UserVersion;
+
   // to make a unique id for pending IRP
   ULONG SerialNumber;
 
